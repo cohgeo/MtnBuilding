@@ -89,21 +89,22 @@
   # Set thermal conductivity.
   # Reasonable values: k is between 1.5 and 3.0 J/(s*m*K).
   k <- seq(from = 1.5, to = 3.0, by = 0.5)
-  # Create a function to calculate T.z for a constant basal T value.
-  TzconstantbasalT <- function(k){
+  # Create a function to calculate T.z for a constant surface temperature and 
+  # constant basal temperature.
+  Tz.TsTb <- function(k){
     # Create a data frame with a column of z values from 0 to D in m.
     DF <- data.frame("z" = seq(from = 0, to = D, by = 1000))
     # Calculate T.z assuming a constant basal temperature.
-    DF$T.z.constantbasalT <- T.s +
+    DF$T.z <- T.s +
       (((T.b - T.s) + ((A * (D ^ 2)) / (2 * k))) / D) * DF$z -
       (A * (DF$z ^ 2)) / (2 * k)
   }
   # Use sapply to loop over different values of k.
-  DF.T.z.basalT <- as.data.frame(sapply(k, TzconstantbasalT))
+  DF.T.z.TsTb <- as.data.frame(sapply(k, Tz.TsTb))
   # Rename columns based on k values.
-  colnames(DF.T.z.basalT) <- paste("k = ", k, sep = "")
+  colnames(DF.T.z.TsTb) <- paste("k = ", k, sep = "")
   # Add column of depth for plotting.
-  DF.T.z.basalT$z <- seq(from = 0, to = D, by = 1000)
+  DF.T.z.TsTb$z <- seq(from = 0, to = D, by = 1000)
 
   
 ## SOLUTION 2 
@@ -112,7 +113,6 @@
   # 1. T = T.s at z = 0 (constant surface temperature)
   # 2. Q = Q.s at z = D (constant surface heat flow)
   
-
 # For 0 ≤ z < D, calculate temperature for a given z value for a range of k 
 # values.
   # # Create a data frame with a column of z values from 0 to D in m.
@@ -121,20 +121,20 @@
   # Reasonable values: k is between 1.5 and 3.0 J/(s*m*K).
   k <- seq(from = 1.5, to = 3.0, by = 0.5)
   # Create a function to calculate T.z for a constant surface heat flow value.
-  TzconstantsurfaceQ <- function(k){
+  Tz.TsQs <- function(k){
     # Create a data frame with a column of z values from 0 to D in m.
     DF <- data.frame("z" = seq(from = 0, to = D, by = 1000))
     # Calculate T.z assuming a constant surface heat flow.
-    DF$T.z.constantsurfaceQ <- T.s +
+    DF$T.z <- T.s +
         (Q.s / k) * DF$z -
         (A * (DF$z ^ 2)) / (2 * k)
   }
   # Use sapply to loop over different values of k.
-  DF.T.z.surfaceQ <- as.data.frame(sapply(k, TzconstantsurfaceQ))
+  DF.T.z.TsQs <- as.data.frame(sapply(k, Tz.TsQs))
   # Rename columns based on k values.
-  colnames(DF.T.z.surfaceQ) <- paste("k = ", k, sep = "")
+  colnames(DF.T.z.TsQs) <- paste("k = ", k, sep = "")
   # Add column of depth for plotting.
-  DF.T.z.surfaceQ$z <- seq(from = 0, to = D, by = 1000)
+  DF.T.z.TsQs$z <- seq(from = 0, to = D, by = 1000)
   
   
   # Old calculation, harder to vary k.
@@ -157,34 +157,36 @@
 ## PLOT SOLUTION 1
   
   # Melt dataframe to get it into ideal format for plotting.
-  melted.DF.T.z.basalT <- melt(DF.T.z.basalT, id.vars = "z")
+  melted.DF.T.z.TsTb <- melt(DF.T.z.TsTb, id.vars = "z")
   
   # Plot the steady state geotherm calculated with a constant basal T.
-  ggplot(data = melted.DF.T.z.basalT,
+  ggplot(data = melted.DF.T.z.TsTb,
          aes(x = value - 273.15,
              y = z / 1000,
              color = variable)) +
     geom_path() +
     scale_y_reverse() +
     theme_bw() +
-    labs(title = "Steady state geotherm (constant surface T, constant basal T)",
+    labs(title = paste("Steady state geotherm (constant T.s, constant T.b), A = ", A.uW, " μW/m^3", sep = ""),
+         color = "Thermal conductivity",  # Label legend.
          x = "Temperature (°C)",  # Label x axis.
          y = "Depth (km)")  # Label y axis.
 
 ## PLOT SOLUTION 2
   
   # Melt dataframe to get it into ideal format for plotting.
-  melted.DF.T.z.surfaceQ <- melt(DF.T.z.surfaceQ, id.vars = "z")
+  melted.DF.T.z.TsQs <- melt(DF.T.z.TsQs, id.vars = "z")
   
   # Plot the steady state geotherm calculated with a constant basal T.
-  ggplot(data = melted.DF.T.z.surfaceQ,
+  ggplot(data = melted.DF.T.z.TsQs,
          aes(x = value - 273.15,
              y = z / 1000,
              color = variable)) +
     geom_path() +
     scale_y_reverse() +
     theme_bw() +
-    labs(title = paste("Steady state geotherm (constant surface T, constant surface Q), A = ", A.uW, " μW/m^3", sep = ""),
+    labs(title = paste("Steady state geotherm (constant T.s, constant Q.s), A = ", A.uW, " μW/m^3", sep = ""),
+         color = "Thermal conductivity",  # Label legend.
          x = "Temperature (°C)",  # Label x axis.
          y = "Depth (km)")  # Label y axis.
   
@@ -210,8 +212,6 @@
   #        x = "Temperature (°C)",  # Label x axis.
   #        y = "Depth (km)")  # Label y axis.
 
-          
-  
   
 # # Plot the steady state geotherm.
 #        # Plot T in °C at z given a constant basal T boundary condition on x axis
