@@ -33,22 +33,22 @@ library(ggplot2)
 
 
 # LAYER 1: continental crust
-D1.km = 40              # depth of layer 1 relative to the surface [km]
+D1.km = 41              # depth of layer 1 relative to the surface [km]
   D1 = D1.km * 1000     # depth of layer 1 relative to the surface [m]
 Ts1.C = 20              # temperature at the surface of layer 1 [°C]
   Ts1 = Ts1.C + 273.15  # temperature at the surface of layer 1 [K]
-Tb1.C = 1600            # basal temperature of layer 1 [°C]
+Tb1.C = 1300            # basal temperature of layer 1 [°C]
   Tb1 = Tb1.C + 273.15  # basal temperature of layer 1 [K]
-Qs1.mW = 90             # surface heat flow of layer 1 [mW/m^2]
+Qs1.mW = 41             # surface heat flow of layer 1 [mW/m^2]
   Qs1 = Qs1.mW / 1000   # surface heat flow of layer 1 [W/m^2]
 Qb1.mW = 10             # basal heat flow of layer 1 [mW/m^2]
   Qb1 = Qb1.mW / 1000   # basal heat flow of lyaer 1 [W/m^2]
-A1.uW = 3               # heat production in layer 1 [μW/m^3]
+A1.uW = 0.4             # heat production in layer 1 [μW/m^3]
   A1 = A1.uW * 10^-6    # heat production in layer 1 [W/m^3]
 k1 = 3                  # thermal conductivity of layer 1 [J/(s*K*m) or W/(m*K)]
 
 # LAYER 2: lithospheric mantle
-D2.km = 100             # depth of layer 2 relative to the surface [km]
+D2.km = 200             # depth of layer 2 relative to the surface [km]
   D2 = D2.km * 1000     # depth of layer 2 relative to the surface [m]
 Ts2.C = Tb1.C           # T at the surface of layer 2 (Tb of layer 1) [°C]
   Ts2 = Ts2.C + 273.15  # T at the surface of layer 2 (Tb of layer 1) [K]
@@ -58,7 +58,7 @@ Qs2.mW = Qb1.mW         # surface heat flow of layer 2 (Qb of layer 1) [mW/m^2]
   Qs2 = Qs2.mW / 1000   # surface heat flow of layer 2 (Qb of layer 1) [W/m^2]
 Qb2.mW = 60             # basal heat flow of layer 2 [mW/m^2]
   Qb2 = Qb2.mW / 1000   # basal heat flow of lyaer 3 [W/m^2]
-A2.uW = 0               # heat production in layer 2 [μW/m^3]
+A2.uW = 0.019           # heat production in layer 2 [μW/m^3]
   A2 = A2.uW * 10^-6    # heat production in layer 2 [W/m^3]
 k2 = 3                  # thermal conductivity of layer 2 [J/(s*K*m) or W/(m*K)]
 
