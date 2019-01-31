@@ -1,6 +1,6 @@
 # This script calculates a steady state geotherm based on equations derived in
 # class on 1/24/19 and plots the geotherm utilizing multiple layers.
-# Updated 2019.01.29 CH.
+# Updated 2019.01.31 CH.
 
 
 ## SETUP -----------------------------------------------------------------------
@@ -66,11 +66,11 @@ k2 = 3                  # thermal conductivity of layer 2 [J/(s*K*m) or W/(m*K)]
 ## CALCULATIONS AND PLOT 1: Boundary conditions Ts, Tb -------------------------
 
 # Boundary condtions:
-# 1. T = T.s at z = 0 (constant surface temperature)
-# 2. T = T.b at z = D (constant basal temperature)
+# 1. T = Ts at z = 0 (constant surface temperature)
+# 2. T = Tb at z = D (constant basal temperature)
 
 # Assumptions:
-# 1. U.z = 0  No advection.
+# 1. Uz = 0  No advection.
 # 2. A is constant and set above.
 # 3. See variables and assigned values above.
 
@@ -124,11 +124,11 @@ k2 = 3                  # thermal conductivity of layer 2 [J/(s*K*m) or W/(m*K)]
 ## CALCULATIONS AND PLOT 2: Boundary conditions Ts, Qs -------------------------
 
 # Boundary condtions:
-# 1. T = T.s at z = 0 (constant surface temperature)
-# 2. Q = Q.s at z = D (constant surface heat flow)
+# 1. T = Ts at z = 0 (constant surface temperature)
+# 2. Q = Qs at z = D (constant surface heat flow)
 
 # Assumptions:
-# 1. U.z = 0  No advection.
+# 1. Uz = 0  No advection.
 # 2. A is constant and set above.
 # 3. See variables and assigned values above.
 
