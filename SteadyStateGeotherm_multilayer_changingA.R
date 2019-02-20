@@ -18,32 +18,32 @@ library(ggplot2)
 # Convert values to the correct units for calculations.
 
 # Set number of layers for model.
-n = 4
+n = 3
 
 # Input the thickness of each layer.
 # D[i] = thickness of layer i.
   # Initialize vector of legth n with dummy thicknesses of 10 km.
   # D.km <- rep(10, n)  # [km]
   # Set thicknesses of layers in km.
-  D.km <- c(5, 15, 25, 5)  # [km]
+  D.km <- c(5, 10, 10)  # [km]
   # Convert layer thickness to m.
   D <- D.km * 1000  # [m]
 
 # Input the heat production in each layer.
 # A[i] = heat production in layer i.
   # Input heat production in μW/m^3.
-  A.uW <- c(8, 1, 2, 2.5)  # [μW/m^3]
+  A.uW <- c(8, 6, 0.2)  # [μW/m^3]
   # CConvert heat production to W/m^3.
   A <- A.uW * 10^-6  # [W/m^3]
 
 # Input the thermal conductivity in each layer.
 # k[i] = thermal conductivity in layer i.
   # Input thermal conductivity in J/(s*K*m) or W/(m*K).
-  k <- c(3, 3, 3, 3)  # [W/(m*K)]
+  k <- c(3, 3, 3)  # [W/(m*K)]
 
 # Input the heat flow (Qb = Q* = Qr) at the base of the model.
   # Input basal heat flow in mW/m^2.
-  Qb.mW <- 18  # [mW/m^2]
+  Qb.mW <- 50  # [mW/m^2]
   # Convert basal heat flow to W/m^2.
   Qb <- Qb.mW / 1000  # [W/m^2]
 
@@ -205,6 +205,16 @@ n = 4
     geom_text(aes(x = max(DF$Tl.C),
                   y = sumD[3] / 1000,
                   label = "D2")) +
+    # # Make a dashed horizontal line showing the depth of D3.
+    # geom_line(aes(x = seq(from = 0, to =  max(DF$Tl.C), by = 100),
+    #               y = sumD[4] / 1000),
+    #           size = 0.75,
+    #           color = "gray",
+    #           linetype = 2) +
+    # # Label D3 line.
+    # geom_text(aes(x = max(DF$Tl.C),
+    #               y = sumD[4] / 1000,
+    #               label = "D3")) +
     # Make a dashed horizontal line showing the depth of D3.
     geom_line(aes(x = seq(from = 0, to =  max(DF$Tl.C), by = 100),
                   y = sumD[4] / 1000),
@@ -214,16 +224,6 @@ n = 4
     # Label D3 line.
     geom_text(aes(x = max(DF$Tl.C),
                   y = sumD[4] / 1000,
-                  label = "D3")) +
-    # Make a dashed horizontal line showing the depth of D4.
-    geom_line(aes(x = seq(from = 0, to =  max(DF$Tl.C), by = 100),
-                  y = sumD[5] / 1000),
-              size = 0.75,
-              color = "gray",
-              linetype = 2) +
-    # Label D3 line.
-    geom_text(aes(x = max(DF$Tl.C),
-                  y = sumD[5] / 1000,
                   label = "MOHO")) +
   
     # Plot Tl.C vs. z.true.km.
