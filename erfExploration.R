@@ -51,3 +51,5 @@ erfc <- function(x) {
   text(0.9, 0.1, 
        "erfc(x)",
        col = "red")
+  
+  
