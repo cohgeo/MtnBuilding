@@ -153,7 +153,9 @@ library(reshape2)
   
   # Sort data frame to make plotting easier.
   TC.melt <-  TC.melt[order(TC.melt$time.Ma),]
-    
+  
+  # Make depth.km column numerical.
+  TC.melt$depth.km <- as.numeric(TC.melt$depth.km)  
   
 
 
@@ -161,13 +163,25 @@ library(reshape2)
   
   
   # Make plot.
-  ggplot(TC.melt, 
-         aes(x = Temperature.C,
-             y = depth.km, 
-             group = time.Ma,
-             color = time.Ma)) +
-    geom_path()
-  
+  ggplot() +
+    # Plot results of model.
+    geom_path(TC.melt, 
+              mapping = aes(x = Temperature.C,
+                            y = depth.km, 
+                            group = time.Ma,
+                            color = time.Ma)) +
+    # Make y axis plot in reverse order (0 depth at top of plot).
+    scale_y_reverse() +
+    # Put x axist at top of plot.
+    scale_x_continuous(position = "top") +
+    # Change to simpler ggplot2 theme.
+    theme_bw() +
+    # Change legend title.
+    guides(color = guide_legend(title = "Time (Ma)")) +
+    # Title plot and label axes.
+    labs(title = "Finite difference model geotherms",  # Title plot.
+         x = "Temperature (°C)",  # Label x axis.
+         y = "Depth (km)")  # Label y axis.
   
   
   
