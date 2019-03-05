@@ -7,15 +7,22 @@
 ## SETUP -----------------------------------------------------------------------
 
 # Clear environment.
-rm(list = ls())
+  rm(list = ls())
 
-# Load ggplot2.
-# install.packages("ggplot2")
-library(ggplot2)
+# Load required packages 
 
-# Load reshape2.
-# install.packages("reshape2")
-library(reshape2)
+  # Load ggplot2.
+  # install.packages("ggplot2")
+  library(ggplot2)
+
+  # Load reshape2.
+  # install.packages("reshape2")
+  library(reshape2)
+
+  # Load RColorBrewer.
+  # install.packages("RColorBrewer")
+  library(RColorBrewer)
+
 
 ## INPUT AND CALCULATE PARAMETERS ----------------------------------------------
 
@@ -35,7 +42,7 @@ library(reshape2)
   A <- 1e-6  # [W/(m^3)]
 
   # Input vertical velocity / uplift in mm/yr.
-  U.mmyr <- 11  # [mm/yr]
+  U.mmyr <- 0  # [mm/yr]
   U <- U.mmyr / (31500000 * 1000)  # [m/s]
   
   # Input geothermal gradient in K/km.
@@ -84,9 +91,9 @@ library(reshape2)
   t.Ma <- seq(from = 0, to = max.time.Ma, by = delta.t.Ma)
   t.s <- vector()  # Initialize vector.
   t.s <- seq(from = 0, to = (max.time.Ma * 31560000000000), by = delta.t.s)
-
   
-## SOLVE FINITE DIFERENCE MODEL ------------------------------------------------
+
+## SETUP MATRIX TO HOLD RESULTS OF MODEL ---------------------------------------
   
   # Initialize matrix to hold results of the model.
   TC <- matrix(data = NA, nrow = length(t.s), ncol = length(x))  
@@ -94,11 +101,25 @@ library(reshape2)
   # Populate first column of the matrix.
   TC[, 1] <- Ts
   
-  # Populate first row of the matrix.
+  
+## PERTURB THE STARTING CONDITIONS ---------------------------------------------
+  
+# Create the starting conditions of the model.
+  
+  # Populate first row of the matrix (unperturbed condtions).
   for (i in 2:dim(TC)[2]) {
     TC[1, i] <- TC[1, 1] + a * x[i]
   }
   
+  # Overwrite part of first row of the matrix for the perturbation. 
+  # Uncomment and motify relevant lines below.
+  # TC[1, 5] <- 500
+  # TC[1, 5:7] <- 500
+  TC[1, 5:7] <- c(500, 600, 500)
+  
+  
+## SOLVE FINITE DIFERENCE MODEL ------------------------------------------------
+
   # Populate the last column of the matix.
   TC[, dim(TC)[2]] <- TC[1, dim(TC)[2]]
 
@@ -136,6 +157,7 @@ library(reshape2)
                                     "t.0.01" = TC[(match(0.01, t.Ma.round)), ], 
                                     "t.0.1"  = TC[(match(0.1, t.Ma.round)), ], 
                                     "t.1"    = TC[(match(1, t.Ma.round)), ], 
+                                    "t.5"    = TC[(match(5, t.Ma.round)), ], 
                                     "t.10"   = TC[(match(10, t.Ma.round)), ], 
                                     "t.20"   = TC[(match(20, t.Ma.round)), ])))
   
@@ -143,7 +165,7 @@ library(reshape2)
   colnames(TC.DF) <- x / 1000 # TC.DF[1, ]  # could also use starting values
   
   # Add time step column for plotting.
-  TC.DF$time.Ma <- c(0, 0.01, 0.1, 1, 10, 20)
+  TC.DF$time.Ma <- c(0, 0.01, 0.1, 1, 5, 10, 20)
   
   # Melt data frame to prepare for plotting.
   TC.melt <- melt(TC.DF, id = "time.Ma")
@@ -154,34 +176,42 @@ library(reshape2)
   # Sort data frame to make plotting easier.
   TC.melt <-  TC.melt[order(TC.melt$time.Ma),]
   
-  # Make depth.km column numerical.
+  # Make depth.km column numeric.
   TC.melt$depth.km <- as.numeric(TC.melt$depth.km)  
   
-
+  # Make time.Ma column into factors.
+  TC.melt$time.Ma <- as.factor(TC.melt$time.Ma)  
+  
 
 ## PLOT GEOTHERMS --------------------------------------------------------------
   
-  
   # Make plot.
   ggplot() +
+    
     # Plot results of model.
-    geom_path(TC.melt, 
+    geom_path(TC.melt,
               mapping = aes(x = Temperature.C,
-                            y = depth.km, 
-                            group = time.Ma,
-                            color = time.Ma)) +
+                            y = depth.km,
+                            color = time.Ma),
+              size = 0.75) +
+    
     # Make y axis plot in reverse order (0 depth at top of plot).
     scale_y_reverse() +
+    
     # Put x axist at top of plot.
     scale_x_continuous(position = "top") +
+    
     # Change to simpler ggplot2 theme.
     theme_bw() +
+    
+    # Change color scale.
+    scale_color_brewer(palette = "YlOrRd") +
+    
     # Change legend title.
     guides(color = guide_legend(title = "Time (Ma)")) +
+    
     # Title plot and label axes.
     labs(title = "Finite difference model geotherms",  # Title plot.
          x = "Temperature (°C)",  # Label x axis.
          y = "Depth (km)")  # Label y axis.
-  
-  
   
