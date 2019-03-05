@@ -1,7 +1,7 @@
 # This script calculates a steady state geotherm based on a finite difference 
 # model with constant heat flow with equations derived in class on 2/27/19 and 
 # plots the geotherm.
-# Updated 2019.02.27 CH.
+# Updated 2019.03.05 CH.
 
 
 ## SETUP -----------------------------------------------------------------------
@@ -80,10 +80,35 @@ library(ggplot2)
   t.s <- vector()  # Initialize vector.
   t.s <- seq(from = 0, to = (max.time.Ma * 31560000000000), by = delta.t.s)
 
+
+## COMBINE PARAMETERS INTO A LIST ----------------------------------------------
+  
+# Create a list of parameters needed to solve the finite difference model.
+  
+  # Initialize list.
+  P <- list()
+  # Create list.
+  P <- list(K = K,
+            delta.t.s = delta.t.s,
+            delta.x = delta.x,
+            A = A,
+            k = k,
+            U = U)
+
+  # TC[j, i] <- TC[j - 1, i] + 
+  #   (P[[K]] * P[[delta.t.s]]) * (((TC[j - 1, i + 1] - 
+  #                          (2 * TC[j - 1, i]) + 
+  #                          TC[j - 1, i - 1]) / (P[[delta.x]] ^ 2)) 
+  #                      + (P[[A]] / P[[k]]) 
+  #                      + ((P[[U]] * (TC[j - 1, i + 1] - 
+  #                                 TC[j - 1, i])) / (P[[K]] * P[[delta.x]])))
+  
+  
+  
+  
+  
   
 ## SOLVE FINITE DIFERENCE MODEL ------------------------------------------------
- 
-
   
   # Initialize matrix to hold results of the model.
   TC <- matrix(data = NA, nrow = length(t.s), ncol = length(x))  
@@ -98,18 +123,15 @@ library(ggplot2)
   
   # Populate the last column of the matix.
   TC[, dim(TC)[2]] <- TC[1, dim(TC)[2]]
-  
-  # for (i in 2:dim(TC)[2] - 1) {
-  #   for (j in 2:dim(TC)[1]) {
-  #     TC[j, i] <- 3
-  #   }
-  # }
-  
-  
-  # Populate the remaining rows of the matrix.
-  for (i in 2:(dim(TC)[2] - 1)) {
-    for (j in 2:dim(TC)[1]) {  
-      TC[j, i] <- TC[j - 1, i] + 
+
+  # Loop though the cells in the matrix and calculate model values.
+  # Initialize vector used in for loop.
+  TCvector <- vector()
+  # Run for loop.
+  for (j in 2:dim(TC)[1]) {  
+    for (i in 2:(dim(TC)[2] - 1)) {
+      TCvector[[1]] <- Ts
+      TCvector[[i]] <- TC[j - 1, i] + 
         (K * delta.t.s) * (((TC[j - 1, i + 1] - 
                                (2 * TC[j - 1, i]) + 
                                TC[j - 1, i - 1]) / (delta.x ^ 2)) 
@@ -117,39 +139,17 @@ library(ggplot2)
                            + ((U * (TC[j - 1, i + 1] - 
                                       TC[j - 1, i])) / (K * delta.x)))
     }
+    TC[j, c(2:dim(TC)[2] - 1)] <- TCvector
   }
   
-  
-  
 
+## SET UP DATA FRAME FOR PLOTTING ----------------------------------------------  
   
-  FiniteDifference.TsTb <- function(j, i) {
-    TC[j, i] <- TC[j - 1, i] + 
-      (K * delta.t.s) * (((TC[j - 1, i + 1] - 
-                             (2 * TC[j - 1, i]) + 
-                             TC[j - 1, i - 1]) / (delta.x ^ 2)) 
-                         + (A / k) 
-                         + ((U * (TC[j - 1, i + 1] - 
-                                    TC[j - 1, i])) / (K * delta.x)))
-  }
+  # Pull times of interest from results matrix.
   
-  TC[2,] <- mapply(FiniteDifference.TsTb, 2:dim(TC)[1], 2:(dim(TC)[2] - 1))
-  
-  TCtest <- mapply(FiniteDifference.TsTb, 2:107151, 2:50)
-  
-  
-  
- #  mapply
-  
+  # Add time step columns for plotting.
 
-  # TC[j, i] <- TC[j - 1, i] + 
-  #   (K * delta.t.s) * (((TC[j - 1, i + 1] - 
-  #                          (2 * TC[j - 1, i]) + 
-  #                          TC[j - 1, i - 1]) / (delta.x ^ 2)) 
-  #                      + (A / k) 
-  #                      + ((U * (TC[j - 1, i + 1] - 
-  #                                 TC[j - 1, i])) / (K * delta.x)))
-  # 
+## PLOT GEOTHERMS --------------------------------------------------------------
   
   
   
@@ -157,20 +157,129 @@ library(ggplot2)
   
   
   
-  
-  
-  # TC[row, column] <- TC[row - 1, column] + 
-  #   (K * delta.t.s) * (((TC[row - 1, column + 1] - 
-  #                          (2 * TC[row - 1, column]) + 
-  #                          TC[row - 1, column - 1]) / (delta.x ^ 2)) 
-  #              + (A / k) 
-  #              + ((U * (TC[row - 1, column + 1] - 
-  #                         TC[row - 1, column])) / (K * delta.x)))
-  
-  
-  
-  
-  
-  
-
-  
+#   
+#   TC.framework <- TC
+#   # for (i in 2:dim(TC)[2] - 1) {
+#   #   for (j in 2:dim(TC)[1]) {
+#   #     TC[j, i] <- 3
+#   #   }
+#   # }
+#   
+#   
+#   # Populate the remaining rows of the matrix.
+#   n=4
+#   j = t.s[n]
+#   
+#   for (i in 2:(dim(TC.framework)[2] - 1)) {
+#     TC <- TC.framework
+#       TC[j, i] <- TC[j - 1, i] + 
+#         (K * delta.t.s) * (((TC[j - 1, i + 1] - 
+#                                (2 * TC[j - 1, i]) + 
+#                                TC[j - 1, i - 1]) / (delta.x ^ 2)) 
+#                            + (A / k) 
+#                            + ((U * (TC[j - 1, i + 1] - 
+#                                       TC[j - 1, i])) / (K * delta.x)))
+#   }
+#   
+#   
+# # Create a function. Input the row above. calculate the new row. save rows in list. bind into matrix. input into framework matrix.
+#   
+# row.above <- TC[1, ]
+# row.above[[i]]
+# 
+# 
+# for (i in 2:50) {
+#   TC.frag[[i]] <- row.above[[i]] + 
+#     (P[[K]] * P[[delta.t.s]]) * (((row.above[[i + 1]] - 
+#                                      (2 * row.above[[i]]) + 
+#                                      row.above[[i - 1]]) / (P[[delta.x]] ^ 2)) 
+#                                  + (P[[A]] / P[[k]]) 
+#                                  + ((P[[U]] * (row.above[[i + 1]] - 
+#                                                  row.above[[i]])) / (P[[K]] * P[[delta.x]])))
+# }
+#   
+#   FiniteDif <- function(rowabove, parameters) {
+#     
+#     TC[j, i] <- TC[j - 1, i] + 
+#       (P[[K]] * P[[delta.t.s]]) * (((TC[j - 1, i + 1] - 
+#                                        (2 * TC[j - 1, i]) + 
+#                                        TC[j - 1, i - 1]) / (P[[delta.x]] ^ 2)) 
+#                                    + (P[[A]] / P[[k]]) 
+#                                    + ((P[[U]] * (TC[j - 1, i + 1] - 
+#                                                    TC[j - 1, i])) / (P[[K]] * P[[delta.x]])))
+#   }
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#   for (i in 2:(dim(TC)[2] - 1)) {
+#     TC[j, i] <- TC[j - 1, i] + 
+#       (K * delta.t.s) * (((TC[j - 1, i + 1] - 
+#                              (2 * TC[j - 1, i]) + 
+#                              TC[j - 1, i - 1]) / (delta.x ^ 2)) 
+#                          + (A / k) 
+#                          + ((U * (TC[j - 1, i + 1] - 
+#                                     TC[j - 1, i])) / (K * delta.x)))
+#   }
+#   
+#   
+#   
+# 
+#   
+#   FiniteDifference.TsTb <- function(TC.framework, j, i) {
+#     TC <- matrix()
+#     TC <- TC.framework
+#     TC[j, i] <- TC[j - 1, i] + 
+#       (K * delta.t.s) * (((TC[j - 1, i + 1] - 
+#                              (2 * TC[j - 1, i]) + 
+#                              TC[j - 1, i - 1]) / (delta.x ^ 2)) 
+#                          + (A / k) 
+#                          + ((U * (TC[j - 1, i + 1] - 
+#                                     TC[j - 1, i])) / (K * delta.x)))
+#   }
+#   
+#   # TC[2,] <- mapply(FiniteDifference.TsTb, 2:dim(TC)[1], 2:(dim(TC)[2] - 1))
+#   
+#   TCtest <- mapply(FiniteDifference.TsTb, TC, 2:10, 2:50)
+#   
+#   
+#   
+#  #  mapply
+#   
+# 
+#   # TC[j, i] <- TC[j - 1, i] + 
+#   #   (K * delta.t.s) * (((TC[j - 1, i + 1] - 
+#   #                          (2 * TC[j - 1, i]) + 
+#   #                          TC[j - 1, i - 1]) / (delta.x ^ 2)) 
+#   #                      + (A / k) 
+#   #                      + ((U * (TC[j - 1, i + 1] - 
+#   #                                 TC[j - 1, i])) / (K * delta.x)))
+#   # 
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#   # TC[row, column] <- TC[row - 1, column] + 
+#   #   (K * delta.t.s) * (((TC[row - 1, column + 1] - 
+#   #                          (2 * TC[row - 1, column]) + 
+#   #                          TC[row - 1, column - 1]) / (delta.x ^ 2)) 
+#   #              + (A / k) 
+#   #              + ((U * (TC[row - 1, column + 1] - 
+#   #                         TC[row - 1, column])) / (K * delta.x)))
+#   
+#   
+#   
+#   
+#   
+#   
+# 
+#   
