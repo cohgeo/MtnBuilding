@@ -10,7 +10,12 @@
 rm(list = ls())
 
 # Load ggplot2.
+# install.packages("ggplot2")
 library(ggplot2)
+
+# Load reshape2.
+# install.packages("reshape2")
+library(reshape2)
 
 ## INPUT AND CALCULATE PARAMETERS ----------------------------------------------
 
@@ -80,33 +85,6 @@ library(ggplot2)
   t.s <- vector()  # Initialize vector.
   t.s <- seq(from = 0, to = (max.time.Ma * 31560000000000), by = delta.t.s)
 
-
-## COMBINE PARAMETERS INTO A LIST ----------------------------------------------
-  
-# Create a list of parameters needed to solve the finite difference model.
-  
-  # Initialize list.
-  P <- list()
-  # Create list.
-  P <- list(K = K,
-            delta.t.s = delta.t.s,
-            delta.x = delta.x,
-            A = A,
-            k = k,
-            U = U)
-
-  # TC[j, i] <- TC[j - 1, i] + 
-  #   (P[[K]] * P[[delta.t.s]]) * (((TC[j - 1, i + 1] - 
-  #                          (2 * TC[j - 1, i]) + 
-  #                          TC[j - 1, i - 1]) / (P[[delta.x]] ^ 2)) 
-  #                      + (P[[A]] / P[[k]]) 
-  #                      + ((P[[U]] * (TC[j - 1, i + 1] - 
-  #                                 TC[j - 1, i])) / (P[[K]] * P[[delta.x]])))
-  
-  
-  
-  
-  
   
 ## SOLVE FINITE DIFERENCE MODEL ------------------------------------------------
   
@@ -145,141 +123,51 @@ library(ggplot2)
 
 ## SET UP DATA FRAME FOR PLOTTING ----------------------------------------------  
   
-  # Pull times of interest from results matrix.
+# Pull times of interest from results matrix.
+
+  # Round the Ma time vector.
+  t.Ma.round <- round(t.Ma, digits = 2)
+
+  # Initialize data frame.
+  TC.DF <- data.frame()
   
-  # Add time step columns for plotting.
+  # Build data frame, pulling rows of times of interest from TC.
+  TC.DF <- as.data.frame(t(data.frame("t.0"  = TC[(match(0, t.Ma.round)), ], 
+                                    "t.0.01" = TC[(match(0.01, t.Ma.round)), ], 
+                                    "t.0.1"  = TC[(match(0.1, t.Ma.round)), ], 
+                                    "t.1"    = TC[(match(1, t.Ma.round)), ], 
+                                    "t.10"   = TC[(match(10, t.Ma.round)), ], 
+                                    "t.20"   = TC[(match(20, t.Ma.round)), ])))
+  
+  # Rename columns based on depth in km associated with each starting value.
+  colnames(TC.DF) <- x / 1000 # TC.DF[1, ]  # could also use starting values
+  
+  # Add time step column for plotting.
+  TC.DF$time.Ma <- c(0, 0.01, 0.1, 1, 10, 20)
+  
+  # Melt data frame to prepare for plotting.
+  TC.melt <- melt(TC.DF, id = "time.Ma")
+  
+  # Rename columns.
+  colnames(TC.melt) <- c("time.Ma", "depth.km", "Temperature.C")
+  
+  # Sort data frame to make plotting easier.
+  TC.melt <-  TC.melt[order(TC.melt$time.Ma),]
+    
+  
+
 
 ## PLOT GEOTHERMS --------------------------------------------------------------
   
   
+  # Make plot.
+  ggplot(TC.melt, 
+         aes(x = Temperature.C,
+             y = depth.km, 
+             group = time.Ma,
+             color = time.Ma)) +
+    geom_path()
   
   
   
   
-  
-#   
-#   TC.framework <- TC
-#   # for (i in 2:dim(TC)[2] - 1) {
-#   #   for (j in 2:dim(TC)[1]) {
-#   #     TC[j, i] <- 3
-#   #   }
-#   # }
-#   
-#   
-#   # Populate the remaining rows of the matrix.
-#   n=4
-#   j = t.s[n]
-#   
-#   for (i in 2:(dim(TC.framework)[2] - 1)) {
-#     TC <- TC.framework
-#       TC[j, i] <- TC[j - 1, i] + 
-#         (K * delta.t.s) * (((TC[j - 1, i + 1] - 
-#                                (2 * TC[j - 1, i]) + 
-#                                TC[j - 1, i - 1]) / (delta.x ^ 2)) 
-#                            + (A / k) 
-#                            + ((U * (TC[j - 1, i + 1] - 
-#                                       TC[j - 1, i])) / (K * delta.x)))
-#   }
-#   
-#   
-# # Create a function. Input the row above. calculate the new row. save rows in list. bind into matrix. input into framework matrix.
-#   
-# row.above <- TC[1, ]
-# row.above[[i]]
-# 
-# 
-# for (i in 2:50) {
-#   TC.frag[[i]] <- row.above[[i]] + 
-#     (P[[K]] * P[[delta.t.s]]) * (((row.above[[i + 1]] - 
-#                                      (2 * row.above[[i]]) + 
-#                                      row.above[[i - 1]]) / (P[[delta.x]] ^ 2)) 
-#                                  + (P[[A]] / P[[k]]) 
-#                                  + ((P[[U]] * (row.above[[i + 1]] - 
-#                                                  row.above[[i]])) / (P[[K]] * P[[delta.x]])))
-# }
-#   
-#   FiniteDif <- function(rowabove, parameters) {
-#     
-#     TC[j, i] <- TC[j - 1, i] + 
-#       (P[[K]] * P[[delta.t.s]]) * (((TC[j - 1, i + 1] - 
-#                                        (2 * TC[j - 1, i]) + 
-#                                        TC[j - 1, i - 1]) / (P[[delta.x]] ^ 2)) 
-#                                    + (P[[A]] / P[[k]]) 
-#                                    + ((P[[U]] * (TC[j - 1, i + 1] - 
-#                                                    TC[j - 1, i])) / (P[[K]] * P[[delta.x]])))
-#   }
-#   
-#   
-#   
-#   
-#   
-#   
-#   
-#   
-#   for (i in 2:(dim(TC)[2] - 1)) {
-#     TC[j, i] <- TC[j - 1, i] + 
-#       (K * delta.t.s) * (((TC[j - 1, i + 1] - 
-#                              (2 * TC[j - 1, i]) + 
-#                              TC[j - 1, i - 1]) / (delta.x ^ 2)) 
-#                          + (A / k) 
-#                          + ((U * (TC[j - 1, i + 1] - 
-#                                     TC[j - 1, i])) / (K * delta.x)))
-#   }
-#   
-#   
-#   
-# 
-#   
-#   FiniteDifference.TsTb <- function(TC.framework, j, i) {
-#     TC <- matrix()
-#     TC <- TC.framework
-#     TC[j, i] <- TC[j - 1, i] + 
-#       (K * delta.t.s) * (((TC[j - 1, i + 1] - 
-#                              (2 * TC[j - 1, i]) + 
-#                              TC[j - 1, i - 1]) / (delta.x ^ 2)) 
-#                          + (A / k) 
-#                          + ((U * (TC[j - 1, i + 1] - 
-#                                     TC[j - 1, i])) / (K * delta.x)))
-#   }
-#   
-#   # TC[2,] <- mapply(FiniteDifference.TsTb, 2:dim(TC)[1], 2:(dim(TC)[2] - 1))
-#   
-#   TCtest <- mapply(FiniteDifference.TsTb, TC, 2:10, 2:50)
-#   
-#   
-#   
-#  #  mapply
-#   
-# 
-#   # TC[j, i] <- TC[j - 1, i] + 
-#   #   (K * delta.t.s) * (((TC[j - 1, i + 1] - 
-#   #                          (2 * TC[j - 1, i]) + 
-#   #                          TC[j - 1, i - 1]) / (delta.x ^ 2)) 
-#   #                      + (A / k) 
-#   #                      + ((U * (TC[j - 1, i + 1] - 
-#   #                                 TC[j - 1, i])) / (K * delta.x)))
-#   # 
-#   
-#   
-#   
-#   
-#   
-#   
-#   
-#   
-#   
-#   # TC[row, column] <- TC[row - 1, column] + 
-#   #   (K * delta.t.s) * (((TC[row - 1, column + 1] - 
-#   #                          (2 * TC[row - 1, column]) + 
-#   #                          TC[row - 1, column - 1]) / (delta.x ^ 2)) 
-#   #              + (A / k) 
-#   #              + ((U * (TC[row - 1, column + 1] - 
-#   #                         TC[row - 1, column])) / (K * delta.x)))
-#   
-#   
-#   
-#   
-#   
-#   
-# 
-#   
