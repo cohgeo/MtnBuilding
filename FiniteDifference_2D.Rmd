@@ -1,0 +1,249 @@
+---
+title: "FiniteDifference_2D"
+author: "Claire Harrigan"
+date: "3/14/2019"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+# This RMarkdown file creates a PDF of a finite difference model.
+
+# Clear all from workspace/environment.
+  rm(list = ls())
+
+# Set universal settings for all code chunks.
+  knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE) 
+  
+# Install and load packages.
+  # install.packages("ggplot2")
+  library(ggplot2)
+```
+
+```{r ModelDimensions}
+# Define size of model domain.
+  x.size <- 10000  # [m]
+  z.size <- 10000  # [m]
+
+# Define stepsize.
+  dx <- 1000  # [m]
+  dz <- 1000  # [m]
+
+# Calculate number of nodes.
+  x.num <- (x.size / dx) + 1
+  z.num <- (z.size / dz) + 1
+
+# Create vectors of node locations.
+  x <- seq(from = 0, to = x.size, by = dx)  # [m]
+  z <- seq(from = 0, to = z.size, by = dz)  # [m]
+```
+
+```{r MaterialProperties}
+# Define initial material properties.
+  A <- 0  # heat production, [W/(m^3)] (1e-6)
+  k <- 3  # thermal conductivity, [W/(m*K)]
+  U <- 0  # uplift, # [m/s]
+  rho <- 3300  # density, [kg/(m^3)]
+  Cp <- 1000  # heat capacity, [J/(kg*K)]
+
+# Calculate minimum thermal diffusivity value to calcualte a stable time step.
+  Kappa.min <- k / (rho * Cp)  # [(m^2)/s]
+
+# Define time step.
+  dt <- dx ^ 2 / 6 * Kappa.min  # [s]
+```
+
+```{r InitializeArrays}
+# Initialize a matrix for initial temperature conditions.
+  T.0 <- matrix(data = NA,
+               nrow = z.num,
+               ncol = x.num)
+
+# Initialize a matrix to hold temperature values conditions.
+  T.dt <- matrix(data = NA,
+                 nrow = z.num,
+                 ncol = x.num)
+
+# Initialize a matrix of thermal diffusivity values.
+  Kappa <- matrix(data = Kappa.min,
+                  nrow = z.num,
+                  ncol = x.num)
+
+# Intialize a matrix of heat production values.
+  A.0 <- matrix(data = A,
+                nrow = z.num,
+                ncol = x.num)
+```
+
+```{r InitializeTDistribution_plume}
+# Set up an initial condition of a circular plume at an elevated temperature.
+
+# Set plume radius.
+  r.plume <- 1000  # [m]
+
+# Initialize rnode.
+  r.node <- matrix(data = NA,
+                   nrow = z.num,
+                   ncol = x.num)
+
+# Loop through the nodes and assign a temperature to the initial conditions
+# based on whether a node is within the plume.  
+  for (i in 1:x.num) {
+    for (j in 1:z.num) {
+      r.node <- ((x[[i]] - x.size / 2) ^ 2 + (z[[j]] - z.size / 2) ^ 2) ^ 0.5
+      if (r.node > r.plume) {
+        T.0[i, j] = 1500 + 273.15
+      } else {
+        T.0[i, j] = 1700 + 273.15
+      }
+    }
+  }
+```
+
+```{r PlotInitialConditions}
+# Plot initial conditions.
+
+# Make a data frame of initial condtions.
+  for.plotting <- as.data.frame(T.0)
+
+# Rename columns and rows of data frame (for plotting).
+  rownames(for.plotting) <- x
+  colnames(for.plotting) <- z
+
+# Load package reshape2 for melting data frames.
+  library(reshape2)
+
+# Melt data frame for plotting.
+  melted.for.plotting <- melt(for.plotting)
+
+# Load packages plotly for plotting.
+  library(plotly)
+
+# Plot initial condtions as a heatmap.
+  plot_ly(
+    x = x,
+    y = z, 
+    z = T.0,
+    type = "heatmap",
+    colorscale = "Viridis"
+  )
+```
+
+```{r Model}
+# Set a maximum number of time steps.
+  n <- 3
+
+# Set a temperature threshold, a value of change in temperature between the same
+# nodes on matrices T.n[n] and T.n[n+1] that suggests that the model has reached
+# steady state.
+  T.threshold <- 5
+
+# Initialize a list as a container for model returns at different times.
+  T.n  <- list()
+
+# Place T.0 in the first position of the T.n list.
+  T.n[[1]] <- T.0
+  
+# Make a matrix that is more than T.treshold greater than T.0 so the first 
+# iteration of the while loop below can be applied and continue running. This 
+# matrix will be overwritten in the for loop below.
+  T.n[[2]] <- T.0 
+  in the second position of the T.n list for the for loop as a
+# a placeholder so the first iteration of the while loop 
+  
+# Solve the finite difference equation for T.dt for a maximum of n time steps 
+# until the T difference between T.n[n] and T.n[n+1] is less than a set 
+# temperature threshold. Use constant T edges.
+  
+  while (T.n[[t + 1]] - T.n[[t]] < T.threshold) {
+    for (t in 1:n) {
+      T.n[[t + 1]] <- T.n[[t]] + 3
+    }
+  }
+  
+    for (t in 1:n) {
+      T.n[[t + 1]] <- T.n[[t]] + 3
+    }
+  
+  
+  T.n[[t + 1]]
+  
+  Tn1 = Tn +
+    (Kappa * dt * (((Tn - (2 * Tn) + Tn ) / (dx ^ 2)) + ((Tn + (2 * Tn) + Tn) / (dz ^ 2) ))) + 
+    ((A.0 * dt) / (rho * Cp)) +
+    (U * dt * ((Tn - Tn) / dz))
+  
+  
+  
+  
+  
+```
+
+```{r PlotModel}
+
+```
+
+
+
+
+
+
+IN PROGRESS
+```{r Adiabat}
+# adiabat (0.5K/km) from 1500 at top to something
+```
+
+```{r Notes}
+
+  
+
+# visualize, solve, reset containers 
+# loop with replacement
+
+# visualize T0
+# for
+# solve Tn+1
+# visualize/sample Tn+1 -> output "pcolor" (color-coded T grid)
+# set T0 = Tn+1
+# next
+
+# to find steady state, compare Tn+1 and Tn... if diff < threshold then exit
+
+# initialize n matrices
+# for 
+# solve Tn
+# append to list
+# next
+
+# while loop to set up threshold ahead of time
+
+# use wraparound or constant T edges
+
+
+# ## SOLVE FINITE DIFERENCE MODEL ------------------------------------------------
+# 
+#   # Populate the last column of the matix.
+#   TC[, dim(TC)[2]] <- TC[1, dim(TC)[2]]
+# 
+#   # Loop though the cells in the matrix and calculate model values.
+#   # Initialize vector used in for loop.
+#   TCvector <- vector()
+#   # Run for loop.
+#   for (j in 2:dim(TC)[1]) {  
+#     for (i in 2:(dim(TC)[2] - 1)) {
+#       TCvector[[1]] <- Ts
+#       TCvector[[i]] <- TC[j - 1, i] + 
+#         (K * delta.t.s) * (((TC[j - 1, i + 1] - 
+#                                (2 * TC[j - 1, i]) + 
+#                                TC[j - 1, i - 1]) / (delta.x ^ 2)) 
+#                            + (A / k) 
+#                            + ((U * (TC[j - 1, i + 1] - 
+#                                       TC[j - 1, i])) / (K * delta.x)))
+#     }
+#     TC[j, c(2:dim(TC)[2] - 1)] <- TCvector
+#   }
+
+
+
+
+```
+
