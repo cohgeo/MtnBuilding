@@ -21,12 +21,18 @@ output: html_document
 
 ```{r ModelDimensions}
 # Define size of model domain.
-  x.size <- 10000  # [m] 
-  z.size <- 10000  # [m] 
+  x.size <- 100000  # [m] 
+  z.size <- 100000  # [m] 
 
+# Set resolution.  
+  Nx <- 40
+  Nz <- 40
+  
 # Define stepsize.
-  dx <- 1000  # [m] 
-  dz <- 1000  # [m] 
+  # dx <- 1000  # [m] 
+  # dz <- 1000  # [m]
+  dx <- x.size / (Nx - 1)  # [m] 
+  dz <- z.size / (Nz - 1)  # [m]  
 
 # Calculate number of nodes.
   x.num <- (x.size / dx) + 1
@@ -49,7 +55,8 @@ output: html_document
   Kappa.min <- k / (rho * Cp)  # [(m^2)/s]
 
 # Define time step.
-  dt <- (dx ^ 2) / 6 * Kappa.min  # [s]
+  # dt <- (dx ^ 2) / 6 * Kappa.min  # [s]
+  dt <- (dx ^ 2) / (3 * Kappa.min)  # [s]
 ```
 
 ```{r InitializeArrays}
@@ -212,7 +219,7 @@ Maximum temperature change between model run n = `r n` (time = `r n * dt` s) and
 ```
 
 
-
+IN PROGRESS
 
 ```{r Model_SetIterationsOverwrite, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 ### Model run without saving every time step
