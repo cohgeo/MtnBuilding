@@ -38,13 +38,13 @@ output: html_document
   k <- matrix(data = 3.0,      # thermal conductivity, [W/(m*K)]
               nrow = z.num,
               ncol = x.num)  
-  A <- matrix(data = 2.2e-8,    # heat production, [W/(m^3)] (1e-6)
+  A <- matrix(data = 2.2e-8,   # heat production, [W/(m^3)] (1e-6)
               nrow = z.num,
               ncol = x.num)  
-  rho <- matrix(data =  3300,  # density, [kg/(m^3)]
+  rho <- matrix(data = 3300,   # density, [kg/(m^3)] (2800)
                 nrow = z.num,
                 ncol = x.num)
-  Cp <- matrix(data =  1293,   # heat capacity, [J/(kg*K)]
+  Cp <- matrix(data = 1293,    # heat capacity, [J/(kg*K)] (1000)
                nrow = z.num,
                ncol = x.num)
   Kappa <- k / (rho * Cp)      # [(m^2)/s]
@@ -56,7 +56,7 @@ output: html_document
 # Define time step.
   dt.max <- (dx ^ 2) / (6 * Kappa.min)  # [s] 
   dt.yr <- dt.max * 3.17098e-8 # [yr]
-  # dt <- dt.max / 3  # Uncomment to change time step to something smaller
+  dt <- dt.max
 ```
 
 ```{r InitializeTDistribution_plume}
@@ -82,21 +82,21 @@ output: html_document
       r.node <- ((x[[i]] - x.size / 2) ^ 2 + (z[[j]] - z.size / 2) ^ 2) ^ 0.5
       if (r.node > r.plume) {
         # Set conditions in the mantle.
-        T.0[i, j]   <- 1500 + (0.5 * -z[[i]] / 1000) + 273.15
-        # T.0[i, j]   <- 1500 + (0.5 * z[[j]] / 1000) + 273.15
-        k[i, j]     <- 3.0    # thermal conductivity, [W/(m*K)]
-        A[i, j]     <- 2.2e8  # heat production, [W/(m^3)]
-        rho[i, j]   <- 3300   # density, [kg/(m^3)]
-        Cp[i, j]    <- 1293   # heat capacity, [J/(kg*K)]
-        Kappa[i, j] <- k[i, j] / (rho[i, j] * Cp[i, j])  # [(m^2)/s]
+        T.0[i, j]   <- 1500 + 273.15
+        # T.0[i, j]   <- 1500 + (0.5 * -z[[j]] / 1000) + 273.15
+        # k[i, j]     <- 3.0    # thermal conductivity, [W/(m*K)]
+        # A[i, j]     <- 1e-6   # heat production, [W/(m^3)]
+        # rho[i, j]   <- 3300   # density, [kg/(m^3)]
+        # Cp[i, j]    <- 1293   # heat capacity, [J/(kg*K)]
+        # Kappa[i, j] <- k[i, j] / (rho[i, j] * Cp[i, j])  # [(m^2)/s]
       } else {
         # Set conditions in the plume.
         T.0[i, j]   <- 1700 + 273.15
-        k[i, j]     <- 3.0    # thermal conductivity, [W/(m*K)]
-        A[i, j]     <- 2.2e8  # heat production, [W/(m^3)]
-        rho[i, j]   <- 3300   # density, [kg/(m^3)]
-        Cp[i, j]    <- 1293   # heat capacity, [J/(kg*K)]
-        Kappa[i, j] <- k[i, j] / (rho[i, j] * Cp[i, j])  # [(m^2)/s]
+        # k[i, j]     <- 3.0    # thermal conductivity, [W/(m*K)]
+        # A[i, j]     <- 1e-6   # heat production, [W/(m^3)]
+        # rho[i, j]   <- 3300   # density, [kg/(m^3)]
+        # Cp[i, j]    <- 1293   # heat capacity, [J/(kg*K)]
+        # Kappa[i, j] <- k[i, j] / (rho[i, j] * Cp[i, j])  # [(m^2)/s]
       }
     }
   }
@@ -122,8 +122,6 @@ Uplift, U = `r U` m/s
 **Initial perterbation:**  
 circular intrusion with `r r.plume` m radius at an elevated temperature  
 
-
-#### Heatmap
 ```{r PlotInitialConditions_heatmap}
 # Plot initial conditions.
 
@@ -132,31 +130,18 @@ circular intrusion with `r r.plume` m radius at an elevated temperature
   library(RColorBrewer)
 
 # Plot initial condtions as a heatmap.
-    plot_ly(
-    x = x,
-    y = z, 
-    z = T.0,
-    type = "heatmap",
-    colors = rev(brewer.pal(9,"RdYlBu"))
-  )
+  plot_ly(x = x,
+          y = z, 
+          z = T.0,
+          type = "heatmap",
+          colors = "Greys") %>%
+          # colors = rev(brewer.pal(9,"RdYlBu"))) %>%
+    colorbar(limits = c(1750, 2000))
 ```
-
-#### Contour Plot
-```{r PlotInitialConditions_contour}
-# Plot initial conditions as a contour plot.    
-  plot_ly(
-    x = x,
-    y = z, 
-    z = T.0,
-    type = "contour",
-    colors = rev(brewer.pal(9,"RdYlBu"))
-  )
-```
-
 
 ```{r Model_SetIterations}
 # Set a number of time steps.
-  n <- 100  # ~5 myr
+  n <- 100  # 100 iterations is about 5 myr
 
 # Initialize a list as a container for model returns at different times.
   T.n  <- list()
@@ -173,274 +158,47 @@ circular intrusion with `r r.plume` m radius at an elevated temperature
                            nrow = z.num,
                            ncol = x.num)
     
-
-    
     # Calculate T for interior of T.n[[t + 1]] matrix.
     for (i in 2:(x.num - 1)) {
       for (j in 2:(z.num - 1)) {
+            
+        # Set constant T border.
+        T.n[[t + 1]][1, ] <- T.n[[t]][1, ]          # top
+        T.n[[t + 1]][z.num, ] <- T.n[[t]][z.num, ]  # bottom
+        T.n[[t + 1]][, 1] <- T.n[[t]][, 1]          # left
+        T.n[[t + 1]][, x.num] <- T.n[[t]][, x.num]  # right
+        # T.n[[t + 1]][, 1] <- 1500 + (0.5 * -z[[i]] / 1000) + 273.15      # left
+        # T.n[[t + 1]][, x.num] <- 1500 + (0.5 * -z[[i]] / 1000) + 273.15  # right
         
-        
-    # Set constant T border.
-    T.n[[t + 1]][1, ] <- T.n[[t]][1, ]          # top
-    T.n[[t + 1]][z.num, ] <- T.n[[t]][z.num, ]  # bottom
-    # T.n[[t + 1]][, 1] <- T.n[[t]][, 1]          # left
-    # T.n[[t + 1]][, x.num] <- T.n[[t]][, x.num]  # right
-    T.n[[t + 1]][, 1] <- 1500 + (0.5 * -z[[i]] / 1000) + 273.15      # left
-    T.n[[t + 1]][, x.num] <- 1500 + (0.5 * -z[[i]] / 1000) + 273.15  # right
-        
-    # Calculate T for the interior of the model space.
+        # Calculate T in the interior of the model
         T.n[[t + 1]][i, j] <- T.n[[t]][i, j] +
           
           # conduction term
-          (Kappa.min * dt * (((T.n[[t]][(i + 1), j] - (2 * T.n[[t]][i, j]) + T.n[[t]][(i - 1), j]) / (dx ^ 2)) + ((T.n[[t]][i, (j + 1)] + (2 * T.n[[t]][i, j]) + T.n[[t]][i, (j - 1)]) / (dz ^ 2) ))) +
+          ((Kappa[i, j] * dt) * (((T.n[[t]][(i + 1), j] - (2 * T.n[[t]][i, j]) + T.n[[t]][(i - 1), j]) / (dx ^ 2)) + ((T.n[[t]][i, (j + 1)] - (2 * T.n[[t]][i, j]) + T.n[[t]][i, (j - 1)]) / (dz ^ 2) ))) +
           
           # heat production term
-          ((A[i, j] * dt) / (rho[i, j] * Cp[i, j])) +  
-          
+          ((A[i, j] * dt) / (rho[i, j] * Cp[i, j])) +
+
           # advection/uplift term
-          (U[i, j] * dt * ((T.n[[t]][i, (j + 1)] - T.n[[t]][i, j]) / dz))  
+          (U[i, j] * dt * ((T.n[[t]][i, (j + 1)] - T.n[[t]][i, j]) / dz))
       }
     }
   }
-
-# Check to see the temperature change.
-  # T.n[[length(T.n)]] - T.n[[1]]
-  # max(T.n[[length(T.n)]] - T.n[[1]])
 ```
 
 ### Results after `r eval(n)` iterations
 
 Maximum temperature change between model run n = `r n` (time = `r n * dt` s) and initial condition (time = 0 s):  
 `r  max(T.n[[length(T.n)]] - T.n[[1]])` K  
+
 ```{r PlotModel_heatmap}
-# Plot model results for a specified time step.
-plot_ly(
-  x = x,
-  y = z, 
-  z = T.n[[101]],  #  z = T.n[[length(T.n)]],
-  type = "heatmap",
-  colors = rev(brewer.pal(9,"RdYlBu"))
-)
-```
-
-
-IN PROGRESS
-
-```{r Model_SetIterationsOverwrite, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-### Model run without saving every time step
-
-# Set a number of time steps.
-  n <- 1000
-
-# Initialize a list as a container for model returns at different times.
-  T.n.ow  <- list()
-  
-# Place T.0 in the first position of the T.n.ow list.
-  T.n.ow[[1]] <- T.0
-
-# Solve the finite difference equation for n time steps.
-  
-  for (t in 1:n) {
-    
-    # Initialize T.n.ow[[t + 1]]
-    T.n.ow[[t + 1]] <- matrix(data = NA,
-                           nrow = z.num,
-                           ncol = x.num)
-    
-    # Set constant T border.
-    T.n.ow[[t + 1]][1, ] <- T.n.ow[[t]][1, ]          # top
-    T.n.ow[[t + 1]][z.num, ] <- T.n.ow[[t]][z.num, ]  # bottom
-    T.n.ow[[t + 1]][, 1] <- T.n.ow[[t]][, 1]          # left
-    T.n.ow[[t + 1]][, x.num] <- T.n.ow[[t]][, x.num]  # right
-    
-    # Calculate T for interior of T.n.ow[[t + 1]] matrix.
-    for (i in 2:(x.num - 1)) {
-      for (j in 2:(z.num - 1)) {
-        
-        T.n.ow[[t + 1]][i, j] <- T.n.ow[[t]][i, j] +
-          
-          # conduction term
-          (Kappa.min * dt * (((T.n.ow[[t]][(i + 1), j] - (2 * T.n.ow[[t]][i, j]) + T.n.ow[[t]][(i - 1), j]) / (dx ^ 2)) + ((T.n.ow[[t]][i, (j + 1)] + (2 * T.n.ow[[t]][i, j]) + T.n.ow[[t]][i, (j - 1)]) / (dz ^ 2) ))) +
-          
-          # heat production term
-          ((A.0[i, j] * dt) / (rho * Cp)) +  
-          
-          # advection/uplift term
-          (U * dt * ((T.n.ow[[t]][i, (j + 1)] - T.n.ow[[t]][i, j]) / dz))  
-      }
-    }
-  }
-```
-
-```{r PlotModel_2}
-# Plot model results for a specified time step.
-  plot_ly(
-    x = x,
-    y = z, 
-    z = T.n.ow[[length(T.n.ow)]],
-    type = "heatmap",
-    colorscale = "Viridis"
-  )
-```
-
-
-
-
-
-
-
-
-
-
-
-```{r Model_SteadyStateStop, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=TRUE}
-# Set a maximum number of time steps.
-  n <- 10
-
-# Set a temperature threshold, a value of change in temperature between the same
-# nodes on matrices T.n[n] and T.n[n+1] that suggests that the model has reached
-# steady state.
-  T.threshold <- 2
-
-# Initialize a list as a container for model returns at different times.
-  T.n  <- list()
-
-# Place T.0 in the first position of the T.n list.
-  T.n[[1]] <- T.0
-  
-# Make a matrix that is more than T.treshold greater than T.0 so the first 
-# iteration of the while loop below can be applied and continue running. This 
-# matrix will be overwritten in the for loop below.
-  T.n[[2]] <- T.0 + (2 * T.threshold)
-  
-# Solve the finite difference equation for T.dt for a maximum of n time steps 
-# until the T difference between T.n[n] and T.n[n+1] is less than a set 
-# temperature threshold. Use constant T edges.
- 
-  
-  # while (T.n[[t + 1]] - T.n[[t]] < T.threshold) {
-  #   T.n[[t + 1]] <- T.n[[t]] + 3
-  # }
-
-  
-  # if (T.n[[t + 1]] - T.n[[t]] < T.threshold) {
-  #   print("yay")
-  # } else {
-  #   print("nay")
-  # }
-   
-  # while (T.n[[t + 1]] - T.n[[t]] < T.threshold) {
-  #   for (t in 1:n) {
-  #     T.n[[t + 1]] <- T.n[[t]] + 3
-  #   }
-  # }
-  
-
-  
-  # Tn1 = Tn +
-  #   (Kappa * dt * (((Tn - (2 * Tn) + Tn ) / (dx ^ 2)) + ((Tn + (2 * Tn) + Tn) / (dz ^ 2) ))) + 
-  #   ((A.0 * dt) / (rho * Cp)) +
-  #   (U * dt * ((Tn - Tn) / dz))
-
-  
-  # WORKING CODE  
-  
-  for (t in 1:n) {
-    # If the maximum value of the difference between the last and second to last
-    # model results (arguments in list) is less than a threshold value, compute
-    # the next model solution.
-    # if (max(T.n[[length(T.n)]] - T.n[[(length(T.n) - 1)]]) > T.threshold) {
-    
-    # Initialize T.n[[t + 1]]
-    T.n[[t + 1]] <- matrix(data = NA,
-                           nrow = z.num,
-                           ncol = x.num)
-    
-    # Set constant T border.
-    T.n[[t + 1]][1, ] <- T.n[[t]][1, ]          # top
-    T.n[[t + 1]][z.num, ] <- T.n[[t]][z.num, ]  # bottom
-    T.n[[t + 1]][, 1] <- T.n[[t]][, 1]          # left
-    T.n[[t + 1]][, x.num] <- T.n[[t]][, x.num]  # right
-    
-    # Calculate T for interior of T.n[[t + 1]] matrix.
-    for (i in 2:(x.num - 1)) {
-      for (j in 2:(z.num - 1)) {
-        T.n[[t + 1]][i, j] <- T.n[[t]][i, j] + t # Replace with real equation
-        #   Tn1 = Tn +
-        # (Kappa * dt * (((Tn - (2 * Tn) + Tn ) / (dx ^ 2)) + ((Tn + (2 * Tn) + Tn) / (dz ^ 2) ))) + 
-        # ((A.0 * dt) / (rho * Cp)) +
-        # (U * dt * ((Tn - Tn) / dz))
-      }
-    }
-    # } 
-  }
-
-  
-
-```
-
-```{r Adiabat, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-# adiabat (0.5K/km) from 1500 at top to something
-```
-
-```{r Notes, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-
-# Indexing
-        # T.n[[t]][i, j]
-        # T.n[[t]][(i + 1), j]
-        # T.n[[t]][(i - 1), j]
-        # T.n[[t]][i, (j + 1)]
-        # T.n[[t]][i, (j - 1)]
-  
-
-# visualize, solve, reset containers 
-# loop with replacement
-
-# visualize T0
-# for
-# solve Tn+1
-# visualize/sample Tn+1 -> output "pcolor" (color-coded T grid)
-# set T0 = Tn+1
-# next
-
-# to find steady state, compare Tn+1 and Tn... if diff < threshold then exit
-
-# initialize n matrices
-# for 
-# solve Tn
-# append to list
-# next
-
-# while loop to set up threshold ahead of time
-
-# use wraparound or constant T edges
-
-
-# ## SOLVE FINITE DIFERENCE MODEL ------------------------------------------------
-# 
-#   # Populate the last column of the matix.
-#   TC[, dim(TC)[2]] <- TC[1, dim(TC)[2]]
-# 
-#   # Loop though the cells in the matrix and calculate model values.
-#   # Initialize vector used in for loop.
-#   TCvector <- vector()
-#   # Run for loop.
-#   for (j in 2:dim(TC)[1]) {  
-#     for (i in 2:(dim(TC)[2] - 1)) {
-#       TCvector[[1]] <- Ts
-#       TCvector[[i]] <- TC[j - 1, i] + 
-#         (K * delta.t.s) * (((TC[j - 1, i + 1] - 
-#                                (2 * TC[j - 1, i]) + 
-#                                TC[j - 1, i - 1]) / (delta.x ^ 2)) 
-#                            + (A / k) 
-#                            + ((U * (TC[j - 1, i + 1] - 
-#                                       TC[j - 1, i])) / (K * delta.x)))
-#     }
-#     TC[j, c(2:dim(TC)[2] - 1)] <- TCvector
-#   }
-
-
-
-
+# Plot model results after n iterations.
+  plot_ly(x = x,
+          y = z, 
+          z = T.n[[length(T.n)]],
+          type = "heatmap",
+          colors = "Greys") %>%
+          # colors = rev(brewer.pal(9,"RdYlBu"))) %>%
+    colorbar(limits = c(1750, 2000))
 ```
 
