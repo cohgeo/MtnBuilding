@@ -108,19 +108,19 @@ output: html_document
 ### Initial Condtions  
   
 **Model Parameters:**  
-dt = `r dt` s  
-dx = `r dx` m  
-dz = `r dz` m  
+dt = `r round((dt * 3.17098e-8 / 1000000), digits = 3)` Myr)
+dx = `r round(dx, digits = 1)` m  
+dz = `r round(dz, digits = 1)` m  
 
 **Material Properties:**  
-Heat production, A = `r A` W/(m^3)   
-Thermal conductivity, k = `r k` W/(m K)  
-Density, rho = `r rho` kg/(m^3)  
-Heat capcity, Cp = `r Cp` J/(kg K)  
-Uplift, U = `r U` m/s  
+Heat production, A = `r mean(A)` W/(m^3)   
+Thermal conductivity, k = `r mean(k)` W/(m K)  
+Density, rho = `r mean(rho)` kg/(m^3)  
+Heat capcity, Cp = `r mean(Cp)` J/(kg K)  
+Uplift, U = `r mean(U)` m/s  
 
 **Initial perterbation:**  
-circular intrusion with `r r.plume` m radius at an elevated temperature  
+circular intrusion with `r (r.plume / 1000)` km radius at an elevated temperature (1700°C)  
 
 ```{r PlotInitialConditions_heatmap}
 # Plot initial conditions.
@@ -130,13 +130,17 @@ circular intrusion with `r r.plume` m radius at an elevated temperature
   library(RColorBrewer)
 
 # Plot initial condtions as a heatmap.
-  plot_ly(x = x,
-          y = z, 
-          z = T.0,
+  plot_ly(x = (x / 1000),
+          y = (z / 1000), 
+          z = T.0 - 273.15,
           type = "heatmap",
           colors = "Greys") %>%
           # colors = rev(brewer.pal(9,"RdYlBu"))) %>%
-    colorbar(limits = c(1750, 2000))
+    colorbar(title = "Temperature (°C)",
+             limits = c(1450, 1750))  %>%
+  layout(xaxis = list(title = "Distance (km)"),
+         yaxis = list(title = "Depth (km)",
+                      autorange = "reversed"))
 ```
 
 ```{r Model_SetIterations}
@@ -188,17 +192,143 @@ circular intrusion with `r r.plume` m radius at an elevated temperature
 
 ### Results after `r eval(n)` iterations
 
-Maximum temperature change between model run n = `r n` (time = `r n * dt` s) and initial condition (time = 0 s):  
-`r  max(T.n[[length(T.n)]] - T.n[[1]])` K  
+Maximum temperature change between model run n = `r n` (time = `r round((n * dt * 3.17098e-8 / 1000000), digits = 2)` Myr) and initial condition (time = 0 Myr):  
+`r  round(((max(T.n[[length(T.n)]] - T.n[[1]])) - 273.15), digits = 2)` °C   
 
 ```{r PlotModel_heatmap}
 # Plot model results after n iterations.
-  plot_ly(x = x,
-          y = z, 
-          z = T.n[[length(T.n)]],
+  plot_ly(x = (x / 1000),
+          y = (z / 1000), 
+          z = T.n[[length(T.n)]] - 273.15,
           type = "heatmap",
           colors = "Greys") %>%
           # colors = rev(brewer.pal(9,"RdYlBu"))) %>%
-    colorbar(limits = c(1750, 2000))
+    colorbar(title = "Temperature (°C)",
+             limits = c(1450, 1750))  %>%
+  layout(xaxis = list(title = "Distance (km)"),
+         yaxis = list(title = "Depth (km)",
+                      autorange = "reversed"))
 ```
 
+
+```{r Model_SetIterations_2}
+# Set a number of time steps.
+  m <- 100  # 100 iterations is about 5 myr
+
+# Solve the finite difference equation for n time steps.
+  
+  for (t in n:(n + m)) {
+    
+    # Initialize T.n[[t + 1]]
+    T.n[[t + 1]] <- matrix(data = NA,
+                           nrow = z.num,
+                           ncol = x.num)
+    
+    # Calculate T for interior of T.n[[t + 1]] matrix.
+    for (i in 2:(x.num - 1)) {
+      for (j in 2:(z.num - 1)) {
+            
+        # Set constant T border.
+        T.n[[t + 1]][1, ] <- T.n[[t]][1, ]          # top
+        T.n[[t + 1]][z.num, ] <- T.n[[t]][z.num, ]  # bottom
+        T.n[[t + 1]][, 1] <- T.n[[t]][, 1]          # left
+        T.n[[t + 1]][, x.num] <- T.n[[t]][, x.num]  # right
+        # T.n[[t + 1]][, 1] <- 1500 + (0.5 * -z[[i]] / 1000) + 273.15      # left
+        # T.n[[t + 1]][, x.num] <- 1500 + (0.5 * -z[[i]] / 1000) + 273.15  # right
+        
+        # Calculate T in the interior of the model
+        T.n[[t + 1]][i, j] <- T.n[[t]][i, j] +
+          
+          # conduction term
+          ((Kappa[i, j] * dt) * (((T.n[[t]][(i + 1), j] - (2 * T.n[[t]][i, j]) + T.n[[t]][(i - 1), j]) / (dx ^ 2)) + ((T.n[[t]][i, (j + 1)] - (2 * T.n[[t]][i, j]) + T.n[[t]][i, (j - 1)]) / (dz ^ 2) ))) +
+          
+          # heat production term
+          ((A[i, j] * dt) / (rho[i, j] * Cp[i, j])) +
+
+          # advection/uplift term
+          (U[i, j] * dt * ((T.n[[t]][i, (j + 1)] - T.n[[t]][i, j]) / dz))
+      }
+    }
+  }
+```
+
+### Results after `r eval(n + m)` iterations
+
+Maximum temperature change between model run n = `r (n + m)` (time = `r round(((n + m) * dt * 3.17098e-8 / 1000000), digits = 2)` Myr) and initial condition (time = 0 Myr):  
+`r  round(((max(T.n[[length(T.n)]] - T.n[[1]])) - 273.15), digits = 2)` °C   
+
+```{r PlotModel_heatmap_2}
+# Plot model results after n iterations.
+  plot_ly(x = (x / 1000),
+          y = (z / 1000), 
+          z = T.n[[length(T.n)]] - 273.15,
+          type = "heatmap",
+          colors = "Greys") %>%
+          # colors = rev(brewer.pal(9,"RdYlBu"))) %>%
+    colorbar(title = "Temperature (°C)",
+             limits = c(1450, 1750))  %>%
+  layout(xaxis = list(title = "Distance (km)"),
+         yaxis = list(title = "Depth (km)",
+                      autorange = "reversed"))
+```
+
+```{r Model_SetIterations_3}
+# Set a number of time steps.
+  o <- 100  # 100 iterations is about 5 myr
+
+# Solve the finite difference equation for n time steps.
+  
+  for (t in n:(n + m + o)) {
+    
+    # Initialize T.n[[t + 1]]
+    T.n[[t + 1]] <- matrix(data = NA,
+                           nrow = z.num,
+                           ncol = x.num)
+    
+    # Calculate T for interior of T.n[[t + 1]] matrix.
+    for (i in 2:(x.num - 1)) {
+      for (j in 2:(z.num - 1)) {
+            
+        # Set constant T border.
+        T.n[[t + 1]][1, ] <- T.n[[t]][1, ]          # top
+        T.n[[t + 1]][z.num, ] <- T.n[[t]][z.num, ]  # bottom
+        T.n[[t + 1]][, 1] <- T.n[[t]][, 1]          # left
+        T.n[[t + 1]][, x.num] <- T.n[[t]][, x.num]  # right
+        # T.n[[t + 1]][, 1] <- 1500 + (0.5 * -z[[i]] / 1000) + 273.15      # left
+        # T.n[[t + 1]][, x.num] <- 1500 + (0.5 * -z[[i]] / 1000) + 273.15  # right
+        
+        # Calculate T in the interior of the model
+        T.n[[t + 1]][i, j] <- T.n[[t]][i, j] +
+          
+          # conduction term
+          ((Kappa[i, j] * dt) * (((T.n[[t]][(i + 1), j] - (2 * T.n[[t]][i, j]) + T.n[[t]][(i - 1), j]) / (dx ^ 2)) + ((T.n[[t]][i, (j + 1)] - (2 * T.n[[t]][i, j]) + T.n[[t]][i, (j - 1)]) / (dz ^ 2) ))) +
+          
+          # heat production term
+          ((A[i, j] * dt) / (rho[i, j] * Cp[i, j])) +
+
+          # advection/uplift term
+          (U[i, j] * dt * ((T.n[[t]][i, (j + 1)] - T.n[[t]][i, j]) / dz))
+      }
+    }
+  }
+```
+
+### Results after `r eval(n + m + o)` iterations
+
+Maximum temperature change between model run n = `r (n + m + o)` (time = `r round(((n + m + o) * dt * 3.17098e-8 / 1000000), digits = 2)` Myr) and initial condition (time = 0 Myr):  
+`r  round(((max(T.n[[length(T.n)]] - T.n[[1]])) - 273.15), digits = 2)` °C   
+
+```{r PlotModel_heatmap_3}
+# Plot model results after n iterations.
+  plot_ly(x = (x / 1000),
+          y = (z / 1000), 
+          z = T.n[[length(T.n)]] - 273.15,
+          type = "heatmap",
+          colors = "Greys") %>%
+          # colors = rev(brewer.pal(9,"RdYlBu"))) %>%
+    colorbar(title = "Temperature (°C)",
+             limits = c(1450, 1750))  %>%
+  layout(xaxis = list(title = "Distance (km)"),
+         yaxis = list(title = "Depth (km)",
+                      autorange = "reversed"))
+```
